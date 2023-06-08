@@ -21,6 +21,9 @@ let options = {
         servers:[
             {
             url:    'http://localhost:4000/'
+            },
+            {
+                url: 'https://myapi-production-1cb7.up.railway.app/'
             }
         ],
     },
