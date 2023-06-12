@@ -4,13 +4,17 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const bodyParser = require('body-parser');
 let config = require('../config');
+const fileupload = require('express-fileupload');
+const nodemailer = require("nodemailer");
+const formidable = require('formidable');
 const User = require('../module/userSchema');
+const API_KEY = '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';
+const sgMail = require('@sendgrid/mail');
 router.use(bodyParser.urlencoded({ extended:true}));
 router.use(bodyParser.json());
+router.use(fileupload());
 
-let mongoose = require('mongoose');
-
-
+sgMail.setApiKey(API_KEY);
 
 router.get('/',(req, res) => {
     res.send({
@@ -42,11 +46,11 @@ router.post('/register',(req, res) => {
                         message: 'User already exists'
                     })
             }else{
-                User.create(postData).then((user)=>{
+                User.create(postData).then((newUser)=>{
                     res.status(200).send({
                         status: 200,
                         message: 'User registered successfully',
-                        result: user
+                        result: newUser
                     })
                 })
             }
@@ -129,7 +133,6 @@ router.post('/login',(req, res)=>{
             let min = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
             let timeRem = 4-min;
             if(fails<=3){
-                console.log(user)
                 let validPass = bcrypt.compareSync(req.body.password,user[0].password);
                 if(validPass){
                         User.updateOne({email: req.body.email,$set:{loginFail: 0}}).then((res)=>{
@@ -177,6 +180,8 @@ router.post('/login',(req, res)=>{
         })
 })
 
+
+
 router.post('/forgetPassword', (req, res)=>{
     let first = Math.floor(Math.random(10)*10);
     let second = Math.floor(Math.random(10)*10);
@@ -189,6 +194,10 @@ router.post('/forgetPassword', (req, res)=>{
     console.log(pass);
     User.find({email:req.body.email}).then(async (user)=>{
         if(user.length>0){
+
+
+            await sendMila(user[0],pass);
+
             await User.updateOne({email:req.body.email},{$set : {password:bcryptpass,loginFail:0}}).then((result)=>{
 
             }).catch(()=>{
@@ -196,8 +205,7 @@ router.post('/forgetPassword', (req, res)=>{
             })
             res.status(200).send({
                 status:200,
-                newPassword: pass,
-                message:"password changed successfully"
+                message:"password changed successfully check your mail"
             })
         }else{
             res.status(400).send({
@@ -206,6 +214,7 @@ router.post('/forgetPassword', (req, res)=>{
             })
         }
     }).catch((err)=>{
+        console.error(err);
         res.status(500).send({
             status:500,
             message:'Something went wrong'
@@ -214,9 +223,23 @@ router.post('/forgetPassword', (req, res)=>{
 })
 
 
+async function sendMila(data,pass){
+    const message = {
+        to: data.email,
+        from:'mahormk121@gmail.com',
+        subject: 'Your Login Password',
+        text: pass,
+        html: `<div>Hello ${data.name} your MK Application login password is ${pass}</div>`
+    }
+    
+    sgMail.send(message).then(response => {
+        console.log('password successful sent');
+    }).catch(err => {
+        console.log('error sending email');
+    })
+}
 router.delete('/deleteUser/:id',(req, res)=>{
     let id = req.params.id;
-    console.log(id);
     if(id){
         User.deleteOne({_id: id}).then((result)=>{
             res.status(200).send({
@@ -260,6 +283,16 @@ router.patch('/userUdate/:id',(req, res)=>{
             message:'something went wrong'
         })
     })
+})
+
+
+router.post('/upload', (req, res)=>{
+    console.log(req.files);
+    console.log(req.body.file);
+    res.status(200).send({
+        status: 200,
+        message: "ok"
+    });
 })
 
 module.exports = router;
@@ -325,7 +358,7 @@ module.exports = router;
  *         description:
  *     responses:
  *       200:
- *         description: Reciepts.
+ *         description: Register user.
  *
  */
 
@@ -370,7 +403,7 @@ module.exports = router;
  *         description:
  *     responses:
  *       200:
- *         description: Reciepts.
+ *         description: user update.
  *
  */
 
@@ -400,7 +433,7 @@ module.exports = router;
  *         description: search by address
  *     responses:
  *       200:
- *         description: Reciepts.
+ *         description: users list.
  *
  */
 
@@ -426,19 +459,18 @@ module.exports = router;
 
 /**
  * @swagger
- * /api/v1/deleteUser/{id}:
- *   delete:
- *     tags: [User]
+ * /api/v1/upload:
+ *   post:
+ *     tags: [Upload]
  *     produces:
  *       - application/json
  *     parameters:
- *       - name: id
+ *       - name: file
  *         in: path
- *         type: string
+ *         type: file
  *         required: true
  *         description:
  *     responses:
  *       200:
- *         description: forget password
- *
+ *         description: delete user
  */
