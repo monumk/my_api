@@ -4,6 +4,7 @@ const cors = require('cors');
 let swaggerJsDoc = require('swagger-jsdoc');
 let swaggerUiExpress = require('swagger-ui-express');
 let bodyParser = require('body-parser');
+const fileupload = require('express-fileupload');
 const db = require('./db');
 let port = 4000;
 
@@ -11,12 +12,13 @@ app.use(cors());
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
+app.use(fileupload());
 
 let options = {
     definition:{
         info:{
-          title:  'Users API Documentation',
-          verson:'1.0.0'
+          title:  'Users API Documentation By MK',
+          verson:'1.0.1'
         },
         servers:[
             {
