@@ -8,7 +8,6 @@ const fileupload = require('express-fileupload');
 const nodemailer = require("nodemailer");
 const formidable = require('formidable');
 const User = require('../module/userSchema');
-const API_KEY = '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';
 const sgMail = require('@sendgrid/mail');
 router.use(bodyParser.urlencoded({ extended:true}));
 router.use(bodyParser.json());
@@ -195,9 +194,6 @@ router.post('/forgetPassword', (req, res)=>{
     User.find({email:req.body.email}).then(async (user)=>{
         if(user.length>0){
 
-
-            await sendMila(user[0],pass);
-
             await User.updateOne({email:req.body.email},{$set : {password:bcryptpass,loginFail:0}}).then((result)=>{
 
             }).catch(()=>{
@@ -221,23 +217,6 @@ router.post('/forgetPassword', (req, res)=>{
         });
     })
 })
-
-
-async function sendMila(data,pass){
-    const message = {
-        to: data.email,
-        from:'mahormk121@gmail.com',
-        subject: 'Your Login Password',
-        text: pass,
-        html: `<div>Hello ${data.name} your MK Application login password is ${pass}</div>`
-    }
-    
-    sgMail.send(message).then(response => {
-        console.log('password successful sent');
-    }).catch(err => {
-        console.log('error sending email');
-    })
-}
 router.delete('/deleteUser/:id',(req, res)=>{
     let id = req.params.id;
     if(id){
